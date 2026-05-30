@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlickDrop — Tonton Bareng</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --accent: #e50914;
+      --accent2: #ff6b35;
+      --gold: #f5c842;
+      --text: #f0f0f0;
+      --muted: #888899;
+      --border: rgba(255,255,255,0.07);
+      --card: #16161f;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    /* LOADING */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      gap: 20px;
+      transition: opacity 0.6s ease;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .loading-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3.2rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .loading-logo span {
+      background: linear-gradient(135deg, #fff, var(--muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .loading-bar-wrap {
+      width: 200px; height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px; overflow: hidden;
+    }
+    .loading-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      animation: loadBar 1.5s ease forwards;
+    }
+    @keyframes loadBar {
+      0% { width: 0% } 60% { width: 65% } 100% { width: 100% }
+    }
+    .loading-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* NAVBAR */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 68px;
+      background: linear-gradient(to bottom, rgba(10,10,15,0.97) 60%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .logo span {
+      background: linear-gradient(135deg, #fff, var(--muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .nav-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(229,9,20,0.12);
+      border: 1px solid rgba(229,9,20,0.3);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.78rem; font-weight: 500;
+      color: #ff8a8a; letter-spacing: 0.03em;
+    }
+    .dot-live {
+      width: 7px; height: 7px;
+      border-radius: 50%; background: var(--accent);
+      animation: pulse-dot 1.4s ease infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.4; transform:scale(0.6); }
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px 60px;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 10%, rgba(229,9,20,0.14) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 20% 90%, rgba(255,107,53,0.07) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.73rem; font-weight: 600;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 18px;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: ''; width: 28px; height: 1px;
+      background: var(--accent); opacity: 0.5;
+    }
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3.5rem, 9vw, 7.5rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      margin-bottom: 18px;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+    .hero-title .accent-line {
+      display: block;
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1.05rem; color: var(--muted);
+      max-width: 460px; line-height: 1.65;
+      margin: 0 auto 44px; font-weight: 300;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 10px;
+      padding: 15px 36px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.05rem; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      animation: fadeUp 0.7s ease 0.4s both;
+      box-shadow: 0 8px 32px rgba(229,9,20,0.3);
+    }
+    .hero-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(229,9,20,0.45);
+    }
+    .scroll-hint {
+      position: absolute; bottom: 32px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; color: var(--muted); font-size: 0.72rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      animation: fadeUp 0.7s ease 0.8s both;
+    }
+    .scroll-arrow {
+      width: 20px; height: 20px;
+      border-right: 2px solid var(--muted);
+      border-bottom: 2px solid var(--muted);
+      transform: rotate(45deg);
+      animation: bounce 1.6s ease infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform: rotate(45deg) translateY(0); }
+      50% { transform: rotate(45deg) translateY(5px); }
+    }
+
+    /* PLAYER SECTION */
+    #player-section {
+      padding: 60px 56px 80px;
+    }
+
+    .section-label {
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 24px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, rgba(229,9,20,0.3), transparent);
+    }
+
+    /* Cloudinary Player Wrapper */
+    .player-outer {
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px var(--border),
+        0 30px 80px rgba(0,0,0,0.7),
+        0 0 60px rgba(229,9,20,0.08);
+      background: #000;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    /* Responsive 16:9 iframe */
+    .player-ratio {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+    }
+    .player-ratio iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* INFO GRID */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 40px;
+    }
+
+    .info-desc-label {
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 12px;
+    }
+    .info-desc {
+      font-size: 1rem; line-height: 1.75;
+      color: rgba(240,240,240,0.7);
+      font-weight: 300;
+    }
+
+    .meta-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+    }
+    .meta-row {
+      display: flex; justify-content: space-between;
+      gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-key { color: var(--muted); }
+    .meta-val { color: var(--text); font-weight: 500; text-align: right; }
+
+    footer {
+      text-align: center;
+      padding: 28px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    footer strong {
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-size: 1rem;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(22px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 80px 20px 60px; }
+      #player-section { padding: 40px 20px 60px; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(229,9,20,0.35); border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">Dims<span>Drop</span></div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-text">Menyiapkan video untukmu...</div>
+</div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo">Dims<span>Drop</span></div>
+  <div class="nav-badge"><span class="dot-live"></span> Eksklusif</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-eyebrow">Khusus kelompok</div>
+  <h1 class="hero-title">
+    Video Tutorial<br>
+    <span class="accent-line">Buat Kalian Semua.</span>
+  </h1>
+  <p class="hero-sub">Video tutorial yang aku dibuat khusus untuk kelompok. Tekan tombol di bawah dan langsung tonton! 🎉</p>
+  <button class="hero-btn" onclick="scrollToPlayer()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Tonton Sekarang
+  </button>
+  <div class="scroll-hint">
+    <div class="scroll-arrow"></div>
+    scroll
+  </div>
+</section>
+
+<!-- PLAYER -->
+<section id="player-section">
+  <div class="section-label">▶ Putar Video</div>
+
+  <div class="player-outer">
+    <div class="player-ratio">
+      <iframe
+        src="https://player.cloudinary.com/embed/?cloud_name=dj5sfnt4g&public_id=dims_2026-05-30_204054_ih5ff3&controls=true&autoplay=false"
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+
+  <!-- INFO -->
+  <div class="info-grid">
+    <div>
+      <div class="info-desc-label">Tentang Video Ini</div>
+      <!-- GANTI deskripsi ini sesuai keinginanmu -->
+      <div class="info-desc">
+        Heyy! Ini video tutorial yang aku bagiin khusus buat kalian. Tonton sampai habis ya —! 🎉
+      </div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-row">
+        <span class="meta-key">Platform</span>
+        <span class="meta-val">☁️ Cloudinary</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Kualitas</span>
+        <span class="meta-val">HD Auto</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Akses</span>
+        <span class="meta-val">🔒 Privat</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-key">Dibagikan</span>
+        <span class="meta-val" id="share-date">—</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <strong>DimsDrop</strong> &nbsp;·&nbsp; Dibuat khusus 
+</footer>
+
+<script>
+  // Tanggal otomatis
+  document.getElementById('share-date').textContent =
+    new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+
+  // Sembunyikan loading
+  setTimeout(() => {
+    document.getElementById('loading-screen').classList.add('hidden');
+  }, 1800);
+
+  function scrollToPlayer() {
+    document.getElementById('player-section').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
